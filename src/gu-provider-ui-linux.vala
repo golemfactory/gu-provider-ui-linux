@@ -97,7 +97,7 @@ public bool on_update_status() {
                 status_text = status_text + (status_text == "" ? "" : ", ") + key + ": " + value;
                 if (value != "Disabled") { ready = true; }
             }
-            if (status_text == "") status_text = "Error";
+            if (status_text == "") status_text = "No Valid Runtime Environment";
             if (ready != connected) {
                 reload_hub_list();
                 indicator.set_icon(ready ? "golemu" : "golemu-red");
@@ -107,6 +107,8 @@ public bool on_update_status() {
             if (ready) {
                 if (upper_row.get_sensitive() == false) { upper_row.set_sensitive(true); hub_list.set_sensitive(true); }
                 update_connection_status();
+            } else {
+                if (upper_row.get_sensitive() == true) { upper_row.set_sensitive(false); hub_list.set_sensitive(false); }
             }
             connected = ready;
         } catch (GLib.Error err) {
@@ -383,7 +385,7 @@ public class GUProviderUI : Gtk.Application {
         /* periodically check provider status */
         GLib.Timeout.add(CHECK_STATUS_EVERY_MS, on_update_status);
 
-        /* show main window if the config file does not exists, i.e. the app was launched for the first time */
+        /* show main window if the config file does not exists, i.e. the app was launched for the first time, or in portable mode */
         add_window(main_window);
         bool config_exists = false;
         string config_file_path = GLib.Path.build_filename(Environment.get_user_config_dir(), CONFIG_FILE_NAME);
@@ -391,6 +393,8 @@ public class GUProviderUI : Gtk.Application {
         try { if (config_file.load_from_file(config_file_path, KeyFileFlags.NONE)) config_exists = true; } catch (GLib.Error err) {}
         if (!config_exists) {
             try { config_file.save_to_file(config_file_path); } catch (GLib.Error err) { warning(err.message); }
+            main_window.show_all();
+        } else if (unixSocketPath == exec_socket_path) {
             main_window.show_all();
         }
     }
